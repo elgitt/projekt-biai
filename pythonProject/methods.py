@@ -24,6 +24,7 @@ def refactor_binary_to_data_frame(filepath: str):
         data = [row for row in reader]
 
     df = pd.DataFrame(data, columns=['x', 'y'])
+    df.to_parquet('data/test.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
     return df
 
 
