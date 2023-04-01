@@ -1,9 +1,7 @@
 import methods as m
 
 
-#m.convert_csv_to_bin('0kg_L', 'test')
-
-test = m.refactor_binary_to_data_frame('test')
+test = m.refactor_binary_to_data_frame('0kg_L')
 x1, y1 = m.change_to_vector(test)
 vectors = []
 for i in range(len(x1)):
