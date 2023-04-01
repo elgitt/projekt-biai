@@ -7,7 +7,7 @@ vectors = []
 for i in range(len(x1)):
     vec = [x1[i], y1[i]]
     vectors.append(vec)
-    print(vec)
+
 
 
 
