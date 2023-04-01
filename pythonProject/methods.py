@@ -6,6 +6,7 @@ import pandas as pd
 import pyarrow.parquet as pq
 
 
+
 def convert_csv_to_bin(input_file: str, output_file: str):
     """Nie używać"""
     with open('data/' + input_file + '.csv', 'r') as csvfile:
@@ -25,6 +26,8 @@ def save_csv_as_parquet(filepath: str):
         data = [row for row in reader]
 
     df = pd.DataFrame(data, columns=['Czas', 'CH1'])
+    df['Czas'] = pd.to_numeric(df['Czas'], errors='coerce')
+    df['Czas'] = df['Czas'].fillna((df['Czas'].shift() + df['Czas'].shift(-1)) / 2)
     df.to_parquet('data/test.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
     return df
 
@@ -54,4 +57,9 @@ def x(file_name):
     m11 = median_method(test, 11)
     m15 = median_method(test, 15)
     m21 = median_method(test, 21)
-    return {'m5': m5, "m9": m9}
+    return {'m5': m5, "m9": m9, "m11": m11, "m15": m15, "m21": m21}
+
+
+def decimate_method(df, decimation_step):
+    df_decimated = df.iloc[::decimation_step, :]
+    return df_decimated
