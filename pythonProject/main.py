@@ -37,6 +37,6 @@ Ikg_W_decimated = Ikg_W_vec[::100]
 Ikg_L_decimated = Ikg_L_vec[::100]
 Ikg_R_decimated = Ikg_R_vec[::100]
 
-test = Okg_L.to_parquet()
+#test = Okg_L.to_parquet()
 print(Okg_L_decimated)
 
