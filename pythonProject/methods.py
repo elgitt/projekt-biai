@@ -4,7 +4,7 @@ import os
 from itertools import islice
 import pandas as pd
 import pyarrow.parquet as pq
-
+import numpy as np
 
 
 def convert_csv_to_bin(input_file: str, output_file: str):
@@ -45,19 +45,24 @@ def median_method(df, window_size):
 
 
 def change_to_vector(df):
-    x = df['Sr'].to_numpy()
-    y = df['CH1'].to_numpy()
-    return x, y
+    xv1 = df['Sr'].to_numpy()
+    yv1 = df['CH1'].to_numpy()
+
+    nan_indices = np.isnan(xv1)
+    xv1 = np.delete(xv1, np.where(nan_indices))
+    yv1 = np.delete(yv1, np.where(nan_indices))
+
+    return xv1, yv1
 
 
-def x(file_name):
+def return_median_mx(file_name):
     test = save_csv_as_parquet(file_name)
     m5 = median_method(test, 5)
     m9 = median_method(test, 9)
     m11 = median_method(test, 11)
     m15 = median_method(test, 15)
     m21 = median_method(test, 21)
-    return {'m5': m5, "m9": m9, "m11": m11, "m15": m15, "m21": m21}
+    return {'m5': m5, "m9": m9, "m11": m11, "m15": m15, "m21": m21, "parquet": test}
 
 
 def decimate_method(df, decimation_step):
