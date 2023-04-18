@@ -28,7 +28,7 @@ def save_csv_as_parquet(filepath: str):
     df = pd.DataFrame(data, columns=['Czas', 'CH1'])
     df['Czas'] = pd.to_numeric(df['Czas'], errors='coerce')
     df['Czas'] = df['Czas'].fillna((df['Czas'].shift() + df['Czas'].shift(-1)) / 2)
-    df.to_parquet('data/test.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
+    df.to_parquet('data/' + filepath + '.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
     return df
 
 
@@ -39,7 +39,7 @@ def read_from_parquet(filepath):
 
 
 def median_method(df, window_size):
-    rolling_mean = df['Czas'].rolling(window_size).mean()
+    rolling_mean = df['Czas'].rolling(window_size).median()
     df['Sr'] = rolling_mean
     return df
 
