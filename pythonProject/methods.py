@@ -5,7 +5,8 @@ from itertools import islice
 import pandas as pd
 import pyarrow.parquet as pq
 import numpy as np
-
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
 
 def convert_csv_to_bin(input_file: str, output_file: str):
     """Nie używać"""
@@ -27,7 +28,7 @@ def save_csv_as_parquet(filepath: str):
 
     df = pd.DataFrame(data, columns=['Czas', 'CH1'])
     df['Czas'] = pd.to_numeric(df['Czas'], errors='coerce')
-    df['Czas'] = df['Czas'].fillna((df['Czas'].shift() + df['Czas'].shift(-1)) / 2)
+    df[' Czas'] = df['Czas'].fillna((df['Czas'].shift() + df['Czas'].shift(-1)) / 2)
     df.to_parquet('data/' + filepath + '.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
     return df
 
@@ -39,8 +40,8 @@ def read_from_parquet(filepath):
 
 
 def median_method(df, window_size):
-    rolling_mean = df['Czas'].rolling(window_size).median()
-    df['Sr'] = rolling_mean
+    rolling_median = df['CH1'].rolling(window_size).median()
+    df['CH1_filtered'] = rolling_median
     return df
 
 
@@ -68,3 +69,36 @@ def return_median_mx(file_name):
 def decimate_method(df, decimation_step):
     df_decimated = df.iloc[::decimation_step, :]
     return df_decimated
+
+
+def time_division(df):
+    time_step = 20
+    df_divided = df['time_bin'] = (df['Czas'] / time_step).astype(int)
+    return df_divided
+
+
+def preprocess_data(df, decimation_step, filter_window_size, time_step):
+    # wykonanie decymacji z zadanym krokiem
+    df_decimated = df.iloc[::decimation_step, :]
+
+    # wykonanie filtracji medianowej z oknem przesuwnym o zadanej wielkości
+    df_filtered = df_decimated.copy()
+    df_filtered['CH1_filtered'] = df_filtered['CH1'].rolling(window=filter_window_size).median()
+
+    # podzielenie przebiegu na odcinki czasu o zadanej długości
+    df_time_binned = df_filtered.copy()
+    df_time_binned['time_bin'] = (df_time_binned['Czas'] / time_step).astype(int)
+
+    # grupowanie wartości na podstawie time_bin i obliczanie średniej, z pominięciem wartości NaN
+    df_time_binned = df_time_binned.groupby('time_bin').mean()
+    df_time_binned = df_time_binned.fillna(df_time_binned.mean())
+
+    return df_time_binned
+
+def regression_model(df):
+    X_train, X_test, y_train, y_test = train_test_split(df['Czas'], df['CH1_filtered'], test_size=0.2, random_state=0)
+    model = LinearRegression()
+    model.fit(X_train.values.reshape(-1, 1), y_train)
+    y_pred = model.predict(X_test.values.reshape(-1, 1))
+    for i in range(len(y_pred)):
+        print(f'Predicted: {y_pred[i]}, Actual: {y_test.values[i]}')
