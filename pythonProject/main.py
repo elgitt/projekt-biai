@@ -1,7 +1,10 @@
 import methods as m
 import matplotlib.pyplot as plt
+import numpy as np
 
-test = m.return_median_mx('0kg_L')['parquet']
+test = m.read_from_parquet('0kg_L')
+
+# m.return_median_mx('0kg_L')['parquet']
 #test2 = m.return_median_mx('0kg_R')['parquet']
 
 decimated_vec = m.decimate_method(test, 100)
@@ -19,8 +22,9 @@ plt.scatter(test["Czas"], test["CH1"], label='L')
 plt.title("Przebiegi parami")
 plt.xlabel("Czas")
 plt.ylabel("Wartości pomiarów")
-#plt.ylim(-2, 6)
+#plt.ylim(0, 1)
 #plt.xlim(-2, 6)
+plt.yticks(np.arange(0, 0.1, 100))
 plt.legend()
 plt.show()
 
