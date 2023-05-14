@@ -19,10 +19,10 @@ graphW = m.regression_with_preprocessed_data(dataW)
 
 df_preprocessedL = graphL['df_preprocessed']
 regression_lineL = graphL['regression_line']
-df_preprocessedR = graphL['df_preprocessed']
-regression_lineR = graphL['regression_line']
-df_preprocessedW = graphL['df_preprocessed']
-regression_lineW = graphL['regression_line']
+df_preprocessedR = graphR['df_preprocessed']
+regression_lineR = graphR['regression_line']
+df_preprocessedW = graphW['df_preprocessed']
+regression_lineW = graphW['regression_line']
 
 plt.scatter(df_preprocessedL["Czas"], df_preprocessedL["CH1_filtered"], label='0kgL', color='purple')
 plt.plot(df_preprocessedL["Czas"], regression_lineL, color='purple', label='0kgL reg.')
