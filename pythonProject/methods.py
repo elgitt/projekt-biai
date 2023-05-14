@@ -3,6 +3,7 @@ import pickle
 import os
 from itertools import islice
 import pandas as pd
+import matplotlib.pyplot as plt
 import pyarrow.parquet as pq
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -108,11 +109,39 @@ def regression_model(df):
 
 def regression_with_preprocessed_data(data):
     df_preprocessed = preprocess_data(data, decimation_step=10, filter_window_size=20, time_step=2)
-    print(df_preprocessed)
+    # print(df_preprocessed)
     regression_model(df_preprocessed)
 
     coefficients = np.polyfit(df_preprocessed["Czas"], df_preprocessed["CH1_filtered"], 1)
     slope = coefficients[0]
     intercept = coefficients[1]
     regression_line = slope * df_preprocessed["Czas"] + intercept
+
     return {'df_preprocessed': df_preprocessed, 'regression_line': regression_line}
+
+
+def generate_graph(dataL, dataR, dataW):
+    graphL = regression_with_preprocessed_data(dataL)
+    graphR = regression_with_preprocessed_data(dataR)
+    graphW = regression_with_preprocessed_data(dataW)
+
+    df_preprocessedL = graphL['df_preprocessed']
+    regression_lineL = graphL['regression_line']
+    df_preprocessedR = graphR['df_preprocessed']
+    regression_lineR = graphR['regression_line']
+    df_preprocessedW = graphW['df_preprocessed']
+    regression_lineW = graphW['regression_line']
+
+    plt.figure("Graph")
+    plt.scatter(df_preprocessedL["Czas"], df_preprocessedL["CH1_filtered"], label='L', color='purple')
+    plt.plot(df_preprocessedL["Czas"], regression_lineL, color='purple', label='L reg.')
+    plt.scatter(df_preprocessedR["Czas"], df_preprocessedR["CH1_filtered"], label='R', color='blue')
+    plt.plot(df_preprocessedR["Czas"], regression_lineR, color='blue', label='R reg.')
+    plt.scatter(df_preprocessedW["Czas"], df_preprocessedW["CH1_filtered"], label='W', color='green')
+    plt.plot(df_preprocessedW["Czas"], regression_lineW, color='green', label='W reg.')
+
+    plt.title("Graph showing the dependence of Time on CH1")
+    plt.xlabel("Time")
+    plt.ylabel("CH1")
+    plt.legend()
+    plt.show()
