@@ -32,7 +32,9 @@ def model_MLP(dataL, dataR, dataW):
 
     # Predykcja na danych testowych
     y_pred = model.predict(X_test_scaled)
+    formatted_y_pred = ["{:.3f}".format(pred) for pred in y_pred]
+    print("Predicted CH1: ", formatted_y_pred)
 
     # Obliczenie średniego błędu kwadratowego
     mse = mean_squared_error(y_test, y_pred)
-    print(f"Mean squared error:", mse)
+    print(f"Mean squared error: ", mse)
