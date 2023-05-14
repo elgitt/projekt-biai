@@ -24,6 +24,7 @@ regression_lineR = graphR['regression_line']
 df_preprocessedW = graphW['df_preprocessed']
 regression_lineW = graphW['regression_line']
 
+plt.figure("Graph")
 plt.scatter(df_preprocessedL["Czas"], df_preprocessedL["CH1_filtered"], label='0kgL', color='purple')
 plt.plot(df_preprocessedL["Czas"], regression_lineL, color='purple', label='0kgL reg.')
 plt.scatter(df_preprocessedR["Czas"], df_preprocessedR["CH1_filtered"], label='0kgR', color='blue')
