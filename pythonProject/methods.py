@@ -8,6 +8,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
+
 def convert_csv_to_bin(input_file: str, output_file: str):
     """Nie używać"""
     with open('data/' + input_file + '.csv', 'r') as csvfile:
@@ -95,6 +96,7 @@ def preprocess_data(df, decimation_step, filter_window_size, time_step):
 
     return df_time_binned
 
+
 def regression_model(df):
     X_train, X_test, y_train, y_test = train_test_split(df['Czas'], df['CH1_filtered'], test_size=0.2, random_state=0)
     model = LinearRegression()
@@ -102,3 +104,15 @@ def regression_model(df):
     y_pred = model.predict(X_test.values.reshape(-1, 1))
     for i in range(len(y_pred)):
         print(f'Predicted: {y_pred[i]}, Actual: {y_test.values[i]}')
+
+
+def regression_with_preprocessed_data(data):
+    df_preprocessed = preprocess_data(data, decimation_step=10, filter_window_size=20, time_step=2)
+    print(df_preprocessed)
+    regression_model(df_preprocessed)
+
+    coefficients = np.polyfit(df_preprocessed["Czas"], df_preprocessed["CH1_filtered"], 1)
+    slope = coefficients[0]
+    intercept = coefficients[1]
+    regression_line = slope * df_preprocessed["Czas"] + intercept
+    return {'df_preprocessed': df_preprocessed, 'regression_line': regression_line}
