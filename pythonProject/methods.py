@@ -10,6 +10,19 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 
 
+def extract_excel_sheet(sheet_name: str, output_file: str):
+    temp_file = 'measurements/temp.csv'
+    excel_file = pd.read_excel('measurements/Synteza.xlsx', sheet_name=sheet_name)
+    excel_file.to_csv(temp_file, index=False)
+    df = pd.read_csv(temp_file)
+    df = df[20:]
+    df = df.iloc[:, :3]
+    df.columns = ['TIME', 'CH1', 'CH2']
+    df.to_csv('measurements/' + output_file + '.csv', index=False)
+    os.remove(temp_file)
+
+
+# old code -------------------------------------------------------------------------------------------------------------
 def convert_csv_to_bin(input_file: str, output_file: str):
     """Nie używać"""
     with open('data/' + input_file + '.csv', 'r') as csvfile:
@@ -145,3 +158,4 @@ def generate_graph(dataL, dataR, dataW):
     plt.ylabel("CH1")
     plt.legend()
     plt.show()
+# old code -------------------------------------------------------------------------------------------------------------

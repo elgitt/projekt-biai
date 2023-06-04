@@ -1,0 +1,11 @@
+Tek0000.csv – pwm 150,Unnamed: 1,Unnamed: 2,Unnamed: 3
+Tek0001.csv – pwm 100,,,
+Tek0002.csv – pwm 100 z obciążeniem,,,
+Tek0003.csv – pwm 50,,,
+Tek0004.csv – pwm 200,,,
+Tek0005.csv – pwm 200 z obciążeniem,,,
+Tek0006.csv - ???,,,
+,,,
+0000-0005,CH1,CH2,MATH
+,Prąd,Napięcie,Moc
+,A,V,W
