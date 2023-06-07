@@ -19,67 +19,31 @@ for file in data_files:
     dfs.append(df)
 
 dataset = pd.concat(dfs)
-single_time = dataset['TIME']
-print(dataset.head())
+okres = dataset
+parametry1 = {
+    'okres_t': okres['TIME'].max() - okres['TIME'].min(),
+    'wartosc_srednia': okres['CH1'].mean(),
+    'odchylenie': okres['CH1'].std(),
+    'mediana': okres['CH1'].median(),
+    'min': okres['CH1'].min(),
+    'max': okres['CH1'].max(),
+    'srednia_harmoniczna': len(okres) / np.sum(1 / okres['CH1']),
+    'dynamika_zmian': okres['CH1'].max() - okres['CH1'].min()
+}
+parametry2 = {
+    'okres_t': okres['TIME'].max() - okres['TIME'].min(),
+    'wartosc_srednia': okres['CH2'].mean(),
+    'odchylenie': okres['CH2'].std(),
+    'mediana': okres['CH2'].median(),
+    'min': okres['CH2'].min(),
+    'max': okres['CH2'].max(),
+    'srednia_harmoniczna': len(okres) / np.sum(1 / okres['CH2']),
+    'dynamika_zmian': okres['CH2'].max() - okres['CH2'].min()
+}
+print(parametry1)
+print(parametry2)
 
-average = np.mean(dataset['CH1'])
-std_deviation = np.std(dataset['CH1'])
-median = np.median(dataset['CH1'])
-minimum = np.min(dataset['CH1'])
-maximum = np.max(dataset['CH1'])
-fft_data = fft(dataset['CH1'].values)
-dynamics = np.max(np.abs(fft_data))
 
-
-print("Wyniki analizy:")
-print("--------------")
-print("Średnia wartość: ", average)
-print("Odchylenie standardowe: ", std_deviation)
-print("Mediana: ", median)
-print("Wartość minimalna: ", minimum)
-print("Wartość maksymalna: ", maximum)
-print("Dynamika zmian FFT: ", dynamics)
-
-plt.plot(dataset['TIME'], dataset['CH1'])
-plt.xlabel('Czas')
-plt.ylabel('Wartość CH1')
-plt.title('Przebieg czasowy CH1')
-plt.show()
-plt.plot(dataset['TIME'], dataset['CH2'])
-plt.xlabel('Czas')
-plt.ylabel('Wartość CH2')
-plt.title('Przebieg czasowy CH2')
-plt.show()
-# Przygotowanie danych
-data = np.array([[average, std_deviation, median, minimum, maximum, dynamics]])
-
-# Normalizacja danych (opcjonalnie)
-# Przykład normalizacji do zakresu 0-1
-# data = (data - np.min(data)) / (np.max(data) - np.min(data))
-
-# Definicja modelu sieci neuronowej
-model = tf.keras.Sequential([
-    tf.keras.layers.Dense(10, activation='relu', input_shape=(6,)),
-    tf.keras.layers.Dense(10, activation='relu'),
-    tf.keras.layers.Dense(6)
-])
-
-# Kompilacja modelu
-model.compile(optimizer='adam', loss='mse')
-
-# Trenowanie modelu
-model.fit(data, data, epochs=100, batch_size=1)
-
-# Testowanie modelu na nowych danych
-predicted_data = model.predict(data)
-
-print("Oszacowane dane:")
-print("Średnia wartość: ", predicted_data[0][0])
-print("Odchylenie standardowe: ", predicted_data[0][1])
-print("Mediana: ", predicted_data[0][2])
-print("Wartość minimalna: ", predicted_data[0][3])
-print("Wartość maksymalna: ", predicted_data[0][4])
-print("Dynamika zmian FFT: ", predicted_data[0][5])
 
 # old main -------------------------------------------------------------------------------------------------------------
 # dataL = m.read_from_parquet('0kg_L')
