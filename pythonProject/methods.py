@@ -1,16 +1,13 @@
 import csv
-import pickle
 import os
-from itertools import islice
 import pandas as pd
-import matplotlib.pyplot as plt
-import pyarrow.parquet as pq
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LinearRegression
+from scipy import stats
+from scipy.stats import skew
+from scipy import signal
 
 
-def extract_excel_sheet(sheet_name: str, output_file: str):
+def extract_excel_sheet(sheet_name, output_file):
     temp_file = 'measurements/temp.csv'
     excel_file = pd.read_excel('measurements/Synteza.xlsx', sheet_name=sheet_name)
     excel_file.to_csv(temp_file, index=False)
@@ -22,140 +19,148 @@ def extract_excel_sheet(sheet_name: str, output_file: str):
     os.remove(temp_file)
 
 
-# old code -------------------------------------------------------------------------------------------------------------
-def convert_csv_to_bin(input_file: str, output_file: str):
-    """Nie używać"""
-    with open('data/' + input_file + '.csv', 'r') as csvfile:
-        reader = csv.reader(islice(csvfile, 22, None))
-        data = [row for row in reader]
+def filter_data(input_file, output_file, cutoff_frequency=100, sampling_frequency=1000, order=4):
+    data = pd.read_csv(input_file)
+    time_values = data['TIME']
+    current_values = data['CH1']
+    voltage_values = data['CH2']
 
-    filepath = os.path.join(os.getcwd(), 'data/' + output_file + '.bin')
+    normalized_cutoff = cutoff_frequency / (0.5 * sampling_frequency)
 
-    with open(filepath, 'wb') as bf:
-        pickle.dump(data, bf)
-        bf.close()
+    b, a = signal.butter(order, normalized_cutoff, btype='low', analog=False)[0], \
+        signal.butter(order, normalized_cutoff, btype='low', analog=False)[1]
 
+    filtered_currents = signal.filtfilt(b, a, current_values)
+    filtered_voltages = signal.filtfilt(b, a, voltage_values)
 
-def save_csv_as_parquet(filepath: str):
-    with open('data/' + filepath + '.csv') as csvfile:
-        reader = csv.reader(islice(csvfile, 22, None))
-        data = [row for row in reader]
-
-    df = pd.DataFrame(data, columns=['Czas', 'CH1'])
-    df['Czas'] = pd.to_numeric(df['Czas'], errors='coerce')
-    df[' Czas'] = df['Czas'].fillna((df['Czas'].shift() + df['Czas'].shift(-1)) / 2)
-    df.to_parquet('data/' + filepath + '.parquet', compression='snappy', engine='pyarrow', row_group_size=10000)
-    return df
+    filtered_data = pd.DataFrame({'TIME': time_values, 'CH1': filtered_currents, 'CH2': filtered_voltages})
+    filtered_data.to_csv(output_file, index=False)
 
 
-def read_from_parquet(filepath):
-    table = pq.read_table('data/' + filepath + '.parquet')
-    df = table.to_pandas()
-    return df
+def extract_period_data(file_path, num_periods):
+    time_values = []
+    current_values = []
+    voltage_values = []
+
+    with open(file_path, 'r') as csv_file:
+        csv_reader = csv.DictReader(csv_file)
+        for row in csv_reader:
+            time = float(row['TIME'])
+            current = float(row['CH1'])
+            voltage = float(row['CH2'])
+            time_values.append(time)
+            current_values.append(current)
+            voltage_values.append(voltage)
+
+    sign_changes = np.diff(np.sign(current_values))
+
+    period_start = None
+    period_end = None
+    periods = []
+
+    for i in range(len(sign_changes)):
+        if sign_changes[i] != 0:
+            if period_start is None:
+                period_start = i
+            elif period_end is None:
+                period_end = i
+                periods.append((period_start, period_end))
+                period_start = i
+                period_end = None
+
+    if period_start is not None and period_end is None:
+        periods.append((period_start, len(sign_changes)))
+
+    period_data = []
+
+    for period in periods[:num_periods]:
+        start_index, end_index = period
+        period_currents = current_values[start_index:end_index]
+        period_times = time_values[start_index:end_index]
+        period_voltages = voltage_values[start_index:end_index]
+
+        period_mean = np.mean(period_currents)
+        period_std = np.std(period_currents)
+        period_duration = period_times[-1] - period_times[0]
+        period_median = np.median(period_currents)
+        period_max = np.max(period_currents)
+        period_min = np.min(period_currents)
+        period_dynamics = period_max - period_min
+        period_top_three = np.sort(period_currents)[-3:]
+        period_rms = np.sqrt(np.mean(np.square(period_currents)))
+        period_peak = np.max(np.abs(period_currents))
+        period_avg_power = np.mean(np.square(period_currents))
+        period_skewness = skew(np.array(period_currents))
+        period_kurtosis = stats.kurtosis(period_currents)
+        period_fft = np.fft.fft(period_currents)
+        period_active_power = np.mean(period_currents * np.array(period_voltages))
+        period_reactive_power = np.mean(period_currents * np.imag(signal.hilbert(period_voltages)))
+
+        if period_duration > 0:
+            period_frequencies = np.fft.fftfreq(len(period_currents), period_duration / len(period_currents))
+        else:
+            period_frequencies = np.zeros(len(period_currents))
+
+        period_amplitudes = np.abs(period_fft)
+        period_harmonics_rms = np.sqrt(np.sum(np.square(period_amplitudes[1:])))
+        period_dom_freq = period_frequencies[np.argmax(period_amplitudes)] if period_duration > 0 else 0.0
+
+        period_data.append([
+            period_mean,  # Średnia
+            period_std,  # Odchylenie standardowe
+            period_duration,  # Okres czasu
+            period_median,  # Mediana
+            period_max,  # Wartość maksymalna
+            period_min,  # Wartość minimalna
+            period_dynamics,  # Dynamika zmian
+            period_top_three,  # Trzy największe wartości
+            period_rms,  # Wartość skuteczna
+            period_peak,  # Wartość szczytowa
+            period_dom_freq,  # Częstotliwość dominująca
+            period_avg_power,  # Średnia moc
+            period_skewness,  # Skośność
+            period_kurtosis,  # Kurtoza
+            period_harmonics_rms,  # Wartość skuteczna harmoniczna
+            period_active_power,  # Moc czynna
+            period_reactive_power,  # Moc bierna
+            period_frequencies,  # Częstotliwości
+            period_amplitudes  # Amplitudy
+        ])
+
+    return period_data
 
 
-def median_method(df, window_size):
-    rolling_median = df['CH1'].rolling(window_size).median()
-    df['CH1_filtered'] = rolling_median
-    return df
+def get_vectors():
+    data = ['filtered_data/Tek0000.csv', 'filtered_data/Tek0001.csv',
+            'filtered_data/Tek0002.csv', 'filtered_data/Tek0003.csv',
+            'measurements/Tek0004.csv', 'filtered_data/Tek0005.csv']
 
+    datafrom0 = []
+    datafrom1 = []
+    datafrom2 = []
+    datafrom3 = []
+    datafrom4 = []
+    datafrom5 = []
 
-def change_to_vector(df):
-    xv1 = df['Sr'].to_numpy()
-    yv1 = df['CH1'].to_numpy()
+    period_data0 = extract_period_data(data[0], 5)
+    datafrom0.append(period_data0)
+    period_data1 = extract_period_data(data[1], 5)
+    datafrom1.append(period_data1)
+    period_data2 = extract_period_data(data[2], 5)
+    datafrom2.append(period_data2)
+    period_data3 = extract_period_data(data[3], 5)
+    datafrom3.append(period_data3)
+    period_data4 = extract_period_data(data[4], 5)
+    datafrom4.append(period_data4)
+    period_data5 = extract_period_data(data[5], 5)
+    datafrom5.append(period_data5)
 
-    nan_indices = np.isnan(xv1)
-    xv1 = np.delete(xv1, np.where(nan_indices))
-    yv1 = np.delete(yv1, np.where(nan_indices))
+    # for data in dataFrom0:
+    #     for i, period in enumerate(data):
+    #         print(f"Period {i+1}:")
+    #         for key, value in period.items():
+    #             print(f"{key}: {value}")
+    #         print("--------")
 
-    return xv1, yv1
-
-
-def return_median_mx(file_name):
-    test = save_csv_as_parquet(file_name)
-    m5 = median_method(test, 5)
-    m9 = median_method(test, 9)
-    m11 = median_method(test, 11)
-    m15 = median_method(test, 15)
-    m21 = median_method(test, 21)
-    return {'m5': m5, "m9": m9, "m11": m11, "m15": m15, "m21": m21, "parquet": test}
-
-
-def decimate_method(df, decimation_step):
-    df_decimated = df.iloc[::decimation_step, :]
-    return df_decimated
-
-
-def time_division(df):
-    time_step = 20
-    df_divided = df['time_bin'] = (df['Czas'] / time_step).astype(int)
-    return df_divided
-
-
-def preprocess_data(df, decimation_step, filter_window_size, time_step):
-    # wykonanie decymacji z zadanym krokiem
-    df_decimated = df.iloc[::decimation_step, :]
-
-    # wykonanie filtracji medianowej z oknem przesuwnym o zadanej wielkości
-    df_filtered = df_decimated.copy()
-    df_filtered['CH1_filtered'] = df_filtered['CH1'].rolling(window=filter_window_size).median()
-
-    # podzielenie przebiegu na odcinki czasu o zadanej długości
-    df_time_binned = df_filtered.copy()
-    df_time_binned['time_bin'] = (df_time_binned['Czas'] / time_step).astype(int)
-
-    # grupowanie wartości na podstawie time_bin i obliczanie średniej, z pominięciem wartości NaN
-    df_time_binned = df_time_binned.groupby('time_bin').mean()
-    df_time_binned = df_time_binned.fillna(df_time_binned.mean())
-
-    return df_time_binned
-
-
-def regression_model(df):
-    X_train, X_test, y_train, y_test = train_test_split(df['Czas'], df['CH1_filtered'], test_size=0.2, random_state=0)
-    model = LinearRegression()
-    model.fit(X_train.values.reshape(-1, 1), y_train)
-    y_pred = model.predict(X_test.values.reshape(-1, 1))
-    for i in range(len(y_pred)):
-        print(f'Predicted: {y_pred[i]}, Actual: {y_test.values[i]}')
-
-
-def regression_with_preprocessed_data(data):
-    df_preprocessed = preprocess_data(data, decimation_step=10, filter_window_size=20, time_step=2)
-    # print(df_preprocessed)
-    regression_model(df_preprocessed)
-
-    coefficients = np.polyfit(df_preprocessed["Czas"], df_preprocessed["CH1_filtered"], 1)
-    slope = coefficients[0]
-    intercept = coefficients[1]
-    regression_line = slope * df_preprocessed["Czas"] + intercept
-
-    return {'df_preprocessed': df_preprocessed, 'regression_line': regression_line}
-
-
-def generate_graph(dataL, dataR, dataW):
-    graphL = regression_with_preprocessed_data(dataL)
-    graphR = regression_with_preprocessed_data(dataR)
-    graphW = regression_with_preprocessed_data(dataW)
-
-    df_preprocessedL = graphL['df_preprocessed']
-    regression_lineL = graphL['regression_line']
-    df_preprocessedR = graphR['df_preprocessed']
-    regression_lineR = graphR['regression_line']
-    df_preprocessedW = graphW['df_preprocessed']
-    regression_lineW = graphW['regression_line']
-
-    plt.figure("Graph")
-    plt.scatter(df_preprocessedL["Czas"], df_preprocessedL["CH1_filtered"], label='L', color='purple')
-    plt.plot(df_preprocessedL["Czas"], regression_lineL, color='purple', label='L reg.')
-    plt.scatter(df_preprocessedR["Czas"], df_preprocessedR["CH1_filtered"], label='R', color='blue')
-    plt.plot(df_preprocessedR["Czas"], regression_lineR, color='blue', label='R reg.')
-    plt.scatter(df_preprocessedW["Czas"], df_preprocessedW["CH1_filtered"], label='W', color='green')
-    plt.plot(df_preprocessedW["Czas"], regression_lineW, color='green', label='W reg.')
-
-    plt.title("Graph showing the dependence of Time on CH1")
-    plt.xlabel("Time")
-    plt.ylabel("CH1")
-    plt.legend()
-    plt.show()
-# old code -------------------------------------------------------------------------------------------------------------
+    return {"vec0": period_data0, "vec1": period_data1, "vec2": period_data2,
+            "vec3": period_data3, "vec4": period_data4, "vec5": period_data5}
