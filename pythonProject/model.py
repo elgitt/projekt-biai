@@ -1,12 +1,12 @@
-import pandas as pd
-import numpy as np
-import csv
-from scipy.fft import fft, fftfreq
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-import tensorflow as tf
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler
-from tensorflow import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
 
+def create_model(input_shape):
+    model = Sequential()
+    model.add(Dense(64, activation='relu', input_shape=input_shape)) # Warstwa wejściowa
+    model.add(Dense(32, activation='relu'))  # Dodatkowe warstwy (opcjonalnie)
+    model.add(Dense(6, activation='softmax'))  # Warstwa wyjściowa z sześcioma neuronami
+
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+    return model
 

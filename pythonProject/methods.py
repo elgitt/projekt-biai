@@ -37,6 +37,14 @@ def filter_data(input_file, output_file, cutoff_frequency=100, sampling_frequenc
     filtered_data.to_csv(output_file, index=False)
 
 
+import csv
+import pandas as pd
+import numpy as np
+from scipy import stats
+from scipy.stats import skew
+from scipy import signal
+
+
 def extract_period_data(file_path, num_periods):
     time_values = []
     current_values = []
@@ -86,24 +94,17 @@ def extract_period_data(file_path, num_periods):
         period_max = np.max(period_currents)
         period_min = np.min(period_currents)
         period_dynamics = period_max - period_min
-        period_top_three = np.sort(period_currents)[-3:]
+        period_top_values = np.sort(period_currents)[-3:]  # Trzy największe wartości
+        period_top1 = period_top_values[-1] if len(period_top_values) >= 1 else np.nan  # Największa wartość
+        period_top2 = period_top_values[-2] if len(period_top_values) >= 2 else np.nan  # Druga największa wartość
+        period_top3 = period_top_values[-3] if len(period_top_values) >= 3 else np.nan  # Trzecia największa wartość
         period_rms = np.sqrt(np.mean(np.square(period_currents)))
         period_peak = np.max(np.abs(period_currents))
         period_avg_power = np.mean(np.square(period_currents))
         period_skewness = skew(np.array(period_currents))
         period_kurtosis = stats.kurtosis(period_currents)
-        period_fft = np.fft.fft(period_currents)
         period_active_power = np.mean(period_currents * np.array(period_voltages))
         period_reactive_power = np.mean(period_currents * np.imag(signal.hilbert(period_voltages)))
-
-        if period_duration > 0:
-            period_frequencies = np.fft.fftfreq(len(period_currents), period_duration / len(period_currents))
-        else:
-            period_frequencies = np.zeros(len(period_currents))
-
-        period_amplitudes = np.abs(period_fft)
-        period_harmonics_rms = np.sqrt(np.sum(np.square(period_amplitudes[1:])))
-        period_dom_freq = period_frequencies[np.argmax(period_amplitudes)] if period_duration > 0 else 0.0
 
         period_data.append([
             period_mean,  # Średnia
@@ -113,21 +114,28 @@ def extract_period_data(file_path, num_periods):
             period_max,  # Wartość maksymalna
             period_min,  # Wartość minimalna
             period_dynamics,  # Dynamika zmian
-            period_top_three,  # Trzy największe wartości
-            period_rms,  # Wartość skuteczna
+            period_top1,  # Największa wartość
+            period_top2,  # Druga największa wartość
+            period_top3,  # Trzecia największa wartość
+            period_rms,  # RMS
             period_peak,  # Wartość szczytowa
-            period_dom_freq,  # Częstotliwość dominująca
             period_avg_power,  # Średnia moc
             period_skewness,  # Skośność
             period_kurtosis,  # Kurtoza
-            period_harmonics_rms,  # Wartość skuteczna harmoniczna
             period_active_power,  # Moc czynna
-            period_reactive_power,  # Moc bierna
-            period_frequencies,  # Częstotliwości
-            period_amplitudes  # Amplitudy
+            period_reactive_power  # Moc bierna
         ])
 
+    period_data = np.array(period_data)
+
+    # Uzupełnianie wartości NaN medianą
+    for i in range(period_data.shape[1]):
+        column = period_data[:, i]
+        column_median = np.nanmedian(column)
+        column[np.isnan(column)] = column_median
+
     return period_data
+
 
 
 def get_vectors():
