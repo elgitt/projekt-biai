@@ -120,7 +120,6 @@ def extract_period_data(file_path, num_periods):
 
     period_data = np.array(period_data)
 
-    # Uzupełnianie wartości NaN medianą
     for i in range(period_data.shape[1]):
         column = period_data[:, i]
         column_median = np.nanmedian(column)
@@ -129,31 +128,17 @@ def extract_period_data(file_path, num_periods):
     return period_data
 
 
-
 def get_vectors():
     data = ['measurements/Tek0000.csv', 'measurements/Tek0001.csv',
             'measurements/Tek0002.csv', 'measurements/Tek0003.csv',
             'measurements/Tek0004.csv', 'measurements/Tek0005.csv']
 
-    datafrom0 = []
-    datafrom1 = []
-    datafrom2 = []
-    datafrom3 = []
-    datafrom4 = []
-    datafrom5 = []
-
-    period_data0 = extract_period_data(data[0], 100)
-    datafrom0.append(period_data0)
-    period_data1 = extract_period_data(data[1], 100)
-    datafrom1.append(period_data1)
-    period_data2 = extract_period_data(data[2], 100)
-    datafrom2.append(period_data2)
-    period_data3 = extract_period_data(data[3], 100)
-    datafrom3.append(period_data3)
-    period_data4 = extract_period_data(data[4], 100)
-    datafrom4.append(period_data4)
-    period_data5 = extract_period_data(data[5], 100)
-    datafrom5.append(period_data5)
+    period_data0 = extract_period_data(data[0], 16000)
+    period_data1 = extract_period_data(data[1], 16000)
+    period_data2 = extract_period_data(data[2], 16000)
+    period_data3 = extract_period_data(data[3], 16000)
+    period_data4 = extract_period_data(data[4], 16000)
+    period_data5 = extract_period_data(data[5], 16000)
 
     # for data in dataFrom0:
     #     for i, period in enumerate(data):
