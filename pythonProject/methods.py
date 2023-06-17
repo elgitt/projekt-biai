@@ -37,14 +37,6 @@ def filter_data(input_file, output_file, cutoff_frequency=100, sampling_frequenc
     filtered_data.to_csv(output_file, index=False)
 
 
-import csv
-import pandas as pd
-import numpy as np
-from scipy import stats
-from scipy.stats import skew
-from scipy import signal
-
-
 def extract_period_data(file_path, num_periods):
     time_values = []
     current_values = []
@@ -139,9 +131,9 @@ def extract_period_data(file_path, num_periods):
 
 
 def get_vectors():
-    data = ['filtered_data/Tek0000.csv', 'filtered_data/Tek0001.csv',
-            'filtered_data/Tek0002.csv', 'filtered_data/Tek0003.csv',
-            'measurements/Tek0004.csv', 'filtered_data/Tek0005.csv']
+    data = ['measurements/Tek0000.csv', 'measurements/Tek0001.csv',
+            'measurements/Tek0002.csv', 'measurements/Tek0003.csv',
+            'measurements/Tek0004.csv', 'measurements/Tek0005.csv']
 
     datafrom0 = []
     datafrom1 = []
@@ -150,17 +142,17 @@ def get_vectors():
     datafrom4 = []
     datafrom5 = []
 
-    period_data0 = extract_period_data(data[0], 5)
+    period_data0 = extract_period_data(data[0], 100)
     datafrom0.append(period_data0)
-    period_data1 = extract_period_data(data[1], 5)
+    period_data1 = extract_period_data(data[1], 100)
     datafrom1.append(period_data1)
-    period_data2 = extract_period_data(data[2], 5)
+    period_data2 = extract_period_data(data[2], 100)
     datafrom2.append(period_data2)
-    period_data3 = extract_period_data(data[3], 5)
+    period_data3 = extract_period_data(data[3], 100)
     datafrom3.append(period_data3)
-    period_data4 = extract_period_data(data[4], 5)
+    period_data4 = extract_period_data(data[4], 100)
     datafrom4.append(period_data4)
-    period_data5 = extract_period_data(data[5], 5)
+    period_data5 = extract_period_data(data[5], 100)
     datafrom5.append(period_data5)
 
     # for data in dataFrom0:

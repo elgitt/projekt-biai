@@ -1,60 +1,64 @@
-import methods as m
-# import model as model
-import pandas as pd
 import numpy as np
-import csv
-from scipy.fft import fft, fftfreq
-import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split
-from sklearn.neural_network import MLPRegressor
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from tensorflow import keras
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.neural_network import MLPRegressor
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense
-from sklearn.neural_network import MLPClassifier
-from model import create_model
+import model as mod
 from tensorflow.keras.models import load_model
 
-data = m.get_vectors()
-
-vec0_data = np.array(data['vec0'])
-vec1_data = np.array(data['vec1'])
-vec2_data = np.array(data['vec2'])
-vec3_data = np.array(data['vec3'])
-vec4_data = np.array(data['vec4'])
-vec5_data = np.array(data['vec5'])
-
-print("vec0:" ,vec0_data)
-print("vec1:" , vec1_data)
-print("vec2:" , vec2_data)
-print("vec3:" , vec3_data)
-print("vec4:" , vec4_data)
-print("vec5:" , vec5_data)
-
-vec_test_data =np.array(data['vec3']);
-
-# model = create_model()
-
-# # Trenowanie modelu
-# epochs = 10  # Przykładowa liczba epok
-# batch_size = 32  # Przykładowy rozmiar paczki
-# model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-# model.fit(vec0_data, np.zeros(len(vec0_data)), epochs=epochs, batch_size=batch_size)
-# model.fit(vec1_data, np.ones(len(vec1_data)), epochs=epochs, batch_size=batch_size)
-# model.fit(vec2_data, np.ones(len(vec2_data)) * 2, epochs=epochs, batch_size=batch_size)
-# model.fit(vec3_data, np.ones(len(vec3_data)) * 3, epochs=epochs, batch_size=batch_size)
-# model.fit(vec4_data, np.ones(len(vec4_data)) * 4, epochs=epochs, batch_size=batch_size)
-# model.fit(vec5_data, np.ones(len(vec5_data)) * 5, epochs=epochs, batch_size=batch_size)
+# data = m.get_vectors()
 #
-# prediction = model.predict(np.array([vec_test_data]))
-# predicted_class = np.argmax(prediction)
+# vec0_data = np.array(data['vec0'])
+# vec1_data = np.array(data['vec1'])
+# vec2_data = np.array(data['vec2'])
+# vec3_data = np.array(data['vec3'])
+# vec4_data = np.array(data['vec4'])
+# vec5_data = np.array(data['vec5'])
+
+# print("vec0:" ,vec0_data)
+# print("vec1:" , vec1_data)
+# print("vec2:" , vec2_data)
+# print("vec3:" , vec3_data)
+# print("vec4:" , vec4_data)
+# print("vec5:" , vec5_data)
+
+# X_train, y_train = mod.prepare_data()
+# input_shape = X_train[0].shape
 #
-# print("Predicted class:", predicted_class)
+# model = mod.create_model(input_shape)
+# model.fit(X_train, y_train, epochs=500, batch_size=50)
+
+# model.save("supermodel.h5")
+
+loaded_model = load_model("supermodel.h5")
+
+# accuracy = loaded_model.evaluate(X_train, y_train)[1]
+# if 0.95 <= accuracy < 1.0:
+#     print("Model został pomyślnie nauczony!")
+# else:
+#     print("Wystąpił problem podczas uczenia modelu.")
+
+class_labels = {
+    0: 'pwm150',
+    1: 'pwm100',
+    2: 'pwm100 z obciążeniem',
+    3: 'pwm50',
+    4: 'pwm200',
+    5: 'pwm200 z obciążeniem',
+}
+
+test_vectors = mod.prepare_test_vector()
+
+# Wybierz wektor testowy
+test_data = tf.convert_to_tensor(test_vectors['vec_test'])
+
+# Przewidywanie klasy dla wektora testowego
+predicted_class = loaded_model.predict(test_data)
+predicted_class_idx = np.argmax(predicted_class)
+
+print("class: ", predicted_class_idx)
+
+
+
+
+
 # old main -------------------------------------------------------------------------------------------------------------
 # dataL = m.read_from_parquet('0kg_L')
 # dataR = m.read_from_parquet('0kg_R')
